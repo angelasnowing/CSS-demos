@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>kinamatics</title>
+    <link type="text/css" rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+    <script>
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const NS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(NS, "svg");
+        svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+        svg.setAttribute("width", `${width}px`);
+        svg.setAttribute("height", `${height}px`);
+        document.body.appendChild(svg);
+        const hue = ~~(Math.random() * 360);
+        document.body.style.background = `linear-gradient(
+  hsl(${hue}, 85%, 50%),
+  hsl(${hue + 30 + ~~(Math.random() * 30)}, 85%, 50%)
+)`;
+
+        class Arm {
+            get end() {
+                return [
+                    this._x + this._length * Math.cos(this._angle),
+                    this._y + this._length * Math.sin(this._angle)
+                ];
+            }
+            constructor(x1, y1, angle, length, parent = null) {
+                this._line = document.createElementNS(NS, "line");
+                this._x = x1;
+                this._y = y1;
+                this._angle = angle;
+                this._length = length;
+                this._parent = parent;
+                this._delta = Math.random() * 2;
+                this._line.setAttribute("stroke", "black");
+                this._line.setAttribute("x1", x1);
+                this._line.setAttribute("y1", y1);
+                svg.appendChild(this._line);
+                this.update(angle);
+            }
+            update(angle) {
+                angle *= this._delta;
+                let parent = this._parent;
+                if (parent) {
+                    const [x1, y1] = parent.end;
+                    this._x = x1;
+                    this._y = y1;
+                    this._line.setAttribute("x1", x1);
+                    this._line.setAttribute("y1", y1);
+                }
+                while (parent) {
+                    angle += parent._angle;
+                    parent = parent._parent;
+                }
+                this._angle = angle;
+                const [x2, y2] = this.end;
+                this._line.setAttribute("x2", x2);
+                this._line.setAttribute("y2", y2);
+            }
+        }
+
+        class KinematicsSystem {
+            get end() {
+                if (this._arms.length === 0) return [0, 0];
+                return this._arms[this._arms.length - 1].end;
+            }
+            constructor(x, y, count) {
+                this._arms = [];
+                for (let i = 0; i < count; i++) {
+                    const parent = i > 0 ? this._arms[i - 1] : null;
+                    const [x1, y1] = i > 0 ? parent.end : [x, y];
+                    this._arms.push(new Arm(x1, y1, 0, width * 0.1 * Math.random(), parent));
+                }
+            }
+            update(angle) {
+                this._arms.forEach(a => a.update(angle));
+            }
+        }
+        const count = 2 + ~~(Math.random() * 3);
+        const ks = new KinematicsSystem(width * 0.5, height * 0.5, count);
+        let a = 0;
+        const delta = 2 * Math.PI * 1e-3;
+        const [x2, y2] = ks.end;
+        let points = `${x2},${y2} `;
+        const polyline = document.createElementNS(NS, "polyline");
+        polyline.setAttribute("fill", "none");
+        polyline.setAttribute("stroke", "white");
+        svg.appendChild(polyline);
+        function tick() {
+            a += delta;
+            ks.update(a);
+            const [x2, y2] = ks.end;
+            points += `${x2},${y2} `;
+            polyline.setAttribute("points", points);
+            requestAnimationFrame(tick);
+        }
+        tick();
+        /*const width = window.innerWidth;
+        const height = window.innerHeight;
+        const NS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(NS, "svg");
+        svg.setAttribute("viewBox", `0 0  ${width} ${height}`);
+        svg.setAttribute("width", `${width}px`);
+        svg.setAttribute("height", `${height}px`);
+        document.body.appendChild(svg);
+        const hue = ~~(Math.random()*360);
+        document.body.style.background = `linear-gradient(
+        hsl(${hue}, 85%, 50%),
+        hsl(${hue+30+~~(Math.random()*30)}, 85%, 50%))`;
+        class Arm{
+            get end(){
+                return [this._x+this._length*Math.cos(this._angle),
+                    this._y+this._length*Math.sin(this._angle)];
+            }
+            constructor(x1, y1, angle, length, parent = null){
+                this._line = document.createElementNS(NS, "line");
+                this._x = x1;
+                this._y = y1;
+                this._angle = angle;
+                this._length = length;
+                this._parent = parent;
+                this._delta = Math.random()*2;
+                this._line.setAttribute("stroke", "black");
+                this._line.setAttribute("x1", x1);
+                this._line.setAttribute("y1", y1);
+                svg.appendChild(this._line);
+                this.update(angle);
+            }
+            update(angle){
+                angle *= this._delta;
+                let parent = this._parent;
+                if (parent){
+                    const [x1,y1] = parent.end;
+                    this._x = x1;
+                    this._y = y1;
+                    this._line.setAttribute("x1", x1);
+                    this._line.setAttribute("y1", y1);
+                }
+                while(parent){
+                    angle +=  parent._angle;
+                    parent = parent._parent;
+                }
+                this._angle = angle;
+                const [x2, y2] = this.end;
+                this._line.setAttribute("x2", x2);
+                this._line.setAttribute("y2", y2);
+            }
+        }
+        class KinematicsSystem {
+            get end(){
+                if (this._arms.length === 0)
+                    return [0,0];
+                return this._arms[this._arms.length - 1].end;
+            }
+            constructor(x,y,count){
+                this._arms = [];
+                for(let i = 0; i < count; i++){
+                    const parent = i > 0 ? this._arms[i-1]: null;
+                    const [x1, y1] = i > 0 ? parent.end : [x,y];
+                    this._arms.push(new Arm(x1, y1, 0, width *0.1*Math.random(), parent));
+                }
+            }
+            update(angle){
+                this._arms.forEach(a=>a.update(angle));
+            }
+        }
+        const count = 2 + ~~(Math.random()*3);
+        const ks = new KinematicsSystem(width*0.5, height*0.5, count);
+        let a = 0;
+        const delta = 2*Math.PI*1e-3;
+        const [x2,y2] = ks.end;
+        let points = `${x2}, ${y2}`;
+        const polyline = document.createElementNS(NS, "polyline");
+        polyline.setAttribute("fill", "none");
+        polyline.setAttribute("stroke", "white");
+        svg.appendChild(polyline);
+        function tick(){
+            a += delta;
+            ks.update(a);
+            const [x2, y2] = ks.end;
+            points += `${x2}, ${y2}`;
+            polyline.setAttribute("points", points);
+            requestAnimationFrame(tick);
+        }
+        tick();*/
+    </script>
+</body>
+</html>

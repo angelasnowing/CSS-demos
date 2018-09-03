@@ -1,0 +1,8 @@
+body{
+    margin: 0;
+    overflow: hidden;
+}
+svg{
+    mix-blend-mode: overlay;
+    stroke-width: 2px;
+}
